@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>C-REITs 跨学科科研与实务工作台 | Urban Planning × Real Estate Finance</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap');
+    body {
+      font-family: 'Inter', 'Noto Sans SC', sans-serif;
+      background-color: #f8fafc;
+      color: #0f172a;
+    }
+    .editable-highlight:hover {
+      background-color: rgba(59, 130, 246, 0.08);
+      outline: 1px dashed #3b82f6;
+      border-radius: 4px;
+      cursor: text;
+    }
+    .tab-active {
+      border-bottom: 2px solid #0f172a;
+      color: #0f172a;
+      font-weight: 600;
+    }
+    .glass-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Top Navigation & Mode Switcher -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center font-bold text-sm">
+          RF
+        </div>
+        <div>
+          <span class="font-semibold text-slate-900 text-sm sm:text-base tracking-tight">C-REITs Research & Practice Hub</span>
+          <span class="hidden md:inline-block ml-2 text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">Urban Planning × Finance</span>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-2 sm:space-x-3">
+        <!-- Mode Toggle -->
+        <div class="bg-slate-100 p-1 rounded-lg flex items-center text-xs font-medium">
+          <button id="btn-mode-private" onclick="setMode('private')" class="px-2.5 py-1.5 rounded-md bg-white text-slate-900 shadow-sm transition">
+            科研工作台
+          </button>
+          <button id="btn-mode-public" onclick="setMode('public')" class="px-2.5 py-1.5 rounded-md text-slate-600 hover:text-slate-900 transition">
+            对外展示 / 面试
+          </button>
+        </div>
+
+        <!-- Backup / Restore (Private Mode Only) -->
+        <div id="data-controls" class="flex items-center space-x-1.5">
+          <button onclick="exportData()" title="导出本地 JSON 备份" class="text-xs px-2.5 py-1.5 rounded-md border border-slate-300 text-slate-700 hover:bg-slate-50 transition">
+            导出备份
+          </button>
+          <label title="从 JSON 文件恢复数据" class="text-xs px-2.5 py-1.5 rounded-md border border-slate-300 text-slate-700 hover:bg-slate-50 transition cursor-pointer">
+            导入
+            <input type="file" id="import-file" accept=".json" class="hidden" onchange="importData(event)" />
+          </label>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero / Academic Identity Section -->
+  <section class="bg-white border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+        <div class="max-w-3xl">
+          <div class="flex items-center space-x-2 text-xs font-medium text-blue-700 mb-2">
+            <span class="px-2 py-0.5 bg-blue-50 rounded border border-blue-100">PhD Research Track · Paper #1</span>
+            <span id="edit-hint" class="text-slate-400">（工作台模式下点击标题或简介可直接编辑）</span>
+          </div>
+          <h1 id="hero-title" contenteditable="true" onblur="saveProfile()" class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight editable-highlight p-1 -ml-1">
+            微观建成环境、空间溢出与中国公募 REITs 定价韧性研究
+          </h1>
+          <p id="hero-subtitle" contenteditable="true" onblur="saveProfile()" class="mt-2 text-sm sm:text-base text-slate-600 leading-relaxed editable-highlight p-1 -ml-1">
+            立足城市规划空间分析与房地产金融交叉视角，结合高颗粒度 GIS 建成环境指标、交易所招募说明书底层资产数据与二级市场交易表现，解析底层物业空间护城河如何传导至现金流稳定性（NOI）与估值溢价。
+          </p>
+          <div class="mt-4 flex flex-wrap gap-2 text-xs">
+            <span class="px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 font-medium">研究市场：中国公募 REITs (C-REITs)</span>
+            <span class="px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 font-medium">核心方法：空间计量 (SDM) / 双重差分 (DID) / 特征价格模型</span>
+            <span class="px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 font-medium">职业锚点：REITs 投研 · 不动产资管 · 基础设施投行</span>
+          </div>
+        </div>
+
+        <!-- Quick KPI Summary -->
+        <div class="grid grid-cols-3 gap-3 sm:gap-4 shrink-0">
+          <div class="glass-card rounded-xl p-3.5 text-center">
+            <div id="stat-lit-count" class="text-2xl font-bold text-slate-900">0</div>
+            <div class="text-xs text-slate-500 mt-0.5">已拆解文献</div>
+          </div>
+          <div class="glass-card rounded-xl p-3.5 text-center">
+            <div id="stat-industry-count" class="text-2xl font-bold text-blue-600">0</div>
+            <div class="text-xs text-slate-500 mt-0.5">实务痛点库</div>
+          </div>
+          <div class="glass-card rounded-xl p-3.5 text-center">
+            <div id="stat-skill-progress" class="text-2xl font-bold text-emerald-600">0%</div>
+            <div class="text-xs text-slate-500 mt-0.5">复合技能点亮</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <div class="mt-8 flex space-x-6 border-b border-slate-200 overflow-x-auto text-sm">
+        <button onclick="switchTab('literature')" id="tab-literature" class="pb-3 whitespace-nowrap tab-active">
+          1. 文献矩阵与方法雷达
+        </button>
+        <button onclick="switchTab('industry')" id="tab-industry" class="pb-3 whitespace-nowrap text-slate-500 hover:text-slate-900">
+          2. 业界实务痛点与问询函库
+        </button>
+        <button onclick="switchTab('skills')" id="tab-skills" class="pb-3 whitespace-nowrap text-slate-500 hover:text-slate-900">
+          3. 规划×金融就业技能树
+        </button>
+        <button onclick="switchTab('topics')" id="tab-topics" class="pb-3 whitespace-nowrap text-slate-500 hover:text-slate-900">
+          4. 第一篇论文选题漏斗
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Content Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <!-- ==================== TAB 1: LITERATURE & METHODS ==================== -->
+    <div id="view-literature" class="space-y-8">
+      
+      <!-- Visual Analytics Row -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="glass-card rounded-xl p-5">
+          <div class="flex items-center justify-between mb-3">
+            <div>
+              <h3 class="text-sm font-semibold text-slate-900">文献演进趋势与视角分布</h3>
+              <p class="text-xs text-slate-500">展示近几年“纯金融定价” vs “空间/ESG跨学科”研究动态</p>
+            </div>
+          </div>
+          <div class="h-60">
+            <canvas id="trendChart"></canvas>
+          </div>
+        </div>
+
+        <div class="glass-card rounded-xl p-5">
+          <div class="flex items-center justify-between mb-3">
+            <div>
+              <h3 class="text-sm font-semibold text-slate-900">方向相关性四象限雷达</h3>
+              <p class="text-xs text-slate-500">横轴：与 C-REITs 场景契合度 ｜ 纵轴：计量/空间方法可复用度</p>
+            </div>
+          </div>
+          <div class="h-60">
+            <canvas id="relevanceChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Variable Building Blocks (Y & X Pool) -->
+      <div class="glass-card rounded-xl p-5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+          <div>
+            <h3 class="text-sm font-semibold text-slate-900">实证变量积木池（自动汇总已录入文献的 $Y$ 与 $X$）</h3>
+            <p class="text-xs text-slate-500">用于快速组合第一篇文章的回归方程：左侧挑选金融/运营结果变量，右侧匹配空间/制度解释变量</p>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="bg-slate-50 rounded-lg p-3.5 border border-slate-200/80">
+            <div class="text-xs font-semibold text-slate-700 mb-2">被解释变量池 (Dependent Variables, Y)</div>
+            <div id="pool-y" class="flex flex-wrap gap-1.5"></div>
+          </div>
+          <div class="bg-blue-50/50 rounded-lg p-3.5 border border-blue-100">
+            <div class="text-xs font-semibold text-blue-900 mb-2">核心解释变量池 (Independent Variables, X)</div>
+            <div id="pool-x" class="flex flex-wrap gap-1.5"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cross-Database Search Engine (OpenAlex + CNKI/Scholar Jump) -->
+      <div class="glass-card rounded-xl p-5">
+        <h3 class="text-sm font-semibold text-slate-900 mb-1">跨库文献检索引擎（实时检索英文库 & 一键直达知网/Scholar）</h3>
+        <p class="text-xs text-slate-500 mb-4">直接调用 OpenAlex 开源学术数据库检索英文顶刊；同时支持生成高级检索式跳转至中国知网（CNKI）与 Google Scholar</p>
+        
+        <div class="flex flex-col md:flex-row gap-3">
+          <input type="text" id="search-query" placeholder="输入关键词，例如：REITs spatial spillover / REITs built environment / 中国公募REITs..." 
+                 class="flex-1 text-sm px-3.5 py-2 rounded-lg border border-slate-300 focus:outline-none focus:border-slate-900" 
+                 value="REITs spatial" />
+          <div class="flex flex-wrap gap-2">
+            <button onclick="searchOpenAlex()" class="px-4 py-2 bg-slate-900 text-white text-xs font-medium rounded-lg hover:bg-slate-800 transition">
+              检索英文文献 (OpenAlex)
+            </button>
+            <button onclick="jumpCNKI()" class="px-3.5 py-2 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 transition">
+              跳转知网检索 ↗
+            </button>
+            <button onclick="jumpScholar()" class="px-3.5 py-2 border border-slate-300 text-slate-700 text-xs font-medium rounded-lg hover:bg-slate-50 transition">
+              Google Scholar ↗
+            </button>
+          </div>
+        </div>
+
+        <!-- OpenAlex Results Container -->
+        <div id="openalex-results" class="mt-4 hidden space-y-2.5 border-t border-slate-100 pt-4"></div>
+      </div>
+
+      <!-- Literature Matrix Table & Add Form -->
+      <div class="glass-card rounded-xl p-5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <div>
+            <h3 class="text-base font-semibold text-slate-900">文献方法论与识别策略矩阵</h3>
+            <p class="text-xs text-slate-500">按计量/空间方法筛选，快速锁定可直接套用的实证模板</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <select id="filter-method" onchange="renderLiterature()" class="text-xs px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-slate-700">
+              <option value="ALL">全部计量/空间方法</option>
+              <option value="空间计量 (SDM/SAR/GWR)">空间计量 (SDM/SAR/GWR)</option>
+              <option value="双重差分 (DID)">双重差分 (DID)</option>
+              <option value="特征价格模型 (Hedonic)">特征价格模型 (Hedonic)</option>
+              <option value="事件研究法 (Event Study)">事件研究法 (Event Study)</option>
+              <option value="工具变量 / PSM">工具变量 / PSM</option>
+            </select>
+            <button onclick="toggleModal('modal-add-lit')" class="private-only px-3.5 py-1.5 bg-slate-900 text-white text-xs font-medium rounded-lg hover:bg-slate-800 transition">
+              + 录入新文献
+            </button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase">
+                <th class="py-3 px-3">文献标题 / 年份</th>
+                <th class="py-3 px-3">研究视角</th>
+                <th class="py-3 px-3">核心方法</th>
+                <th class="py-3 px-3">被解释变量 (Y)</th>
+                <th class="py-3 px-3">核心解释变量 (X)</th>
+                <th class="py-3 px-3">相关性评分</th>
+                <th class="py-3 px-3 private-only text-right">操作</th>
+              </tr>
+            </thead>
+            <tbody id="lit-table-body" class="divide-y divide-slate-100 text-sm"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== TAB 2: INDUSTRY PULSE & PRACTITIONER INSIGHTS ==================== -->
+    <div id="view-industry" class="hidden space-y-6">
+      
+      <!-- Direct Industry Portal Links -->
+      <div class="glass-card rounded-xl p-5">
+        <h3 class="text-sm font-semibold text-slate-900 mb-1">业界一线信源与交易所披露直达墙（打破信息壁垒）</h3>
+        <p class="text-xs text-slate-500 mb-4">交易所“审核问询函回复”与“季度运营报告”是了解底层资产真实经营痛点与估值逻辑的最佳免费教材</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <a href="http://www.sse.com.cn/reits/" target="_blank" class="p-3.5 rounded-lg border border-slate-200 hover:border-slate-900 transition block">
+            <div class="text-xs font-semibold text-slate-900">上交所公募 REITs 专区 ↗</div>
+            <div class="text-xs text-slate-500 mt-1">查阅招募说明书、反馈问询函及底层资产评估报告</div>
+          </a>
+          <a href="http://www.szse.cn/reits/" target="_blank" class="p-3.5 rounded-lg border border-slate-200 hover:border-slate-900 transition block">
+            <div class="text-xs font-semibold text-slate-900">深交所公募 REITs 专区 ↗</div>
+            <div class="text-xs text-slate-500 mt-1">追踪产业园、仓储物流与消费基础设施最新扩募动态</div>
+          </a>
+          <a href="https://www.csindex.com.cn/" target="_blank" class="p-3.5 rounded-lg border border-slate-200 hover:border-slate-900 transition block">
+            <div class="text-xs font-semibold text-slate-900">中证指数 (中证REITs全收益) ↗</div>
+            <div class="text-xs text-slate-500 mt-1">获取 C-REITs 二级市场板块指数走势与分红收益率基准</div>
+          </a>
+          <a href="https://scholar.google.com/scholar?q=%22C-REITs%22+OR+%22%E5%85%AC%E5%8B%9FREITs%22+%E6%89%A9%E5%8B%9F" target="_blank" class="p-3.5 rounded-lg border border-slate-200 hover:border-slate-900 transition block">
+            <div class="text-xs font-semibold text-slate-900">券商与实务专题追踪 ↗</div>
+            <div class="text-xs text-slate-500 mt-1">检索中金、华泰、中信关于底层资产现金流与扩募定价分析</div>
+          </a>
+        </div>
+      </div>
+
+      <!-- Practitioner Pain Points to Academic Research Mapping -->
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="text-base font-semibold text-slate-900">业界实务痛点 → 博士学术选题翻译器</h3>
+          <p class="text-xs text-slate-500">记录一级市场尽调、运管机构租约管理与二级市场交易员最关心的痛点，并转化为可检验的学术假设</p>
+        </div>
+        <button onclick="toggleModal('modal-add-industry')" class="private-only px-3.5 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 transition">
+          + 记录实务痛点 / 研报笔记
+        </button>
+      </div>
+
+      <div id="industry-cards-container" class="grid grid-cols-1 md:grid-cols-2 gap-5"></div>
+    </div>
+
+    <!-- ==================== TAB 3: CAREER SKILL MATRIX ==================== -->
+    <div id="view-skills" class="hidden space-y-6">
+      <div class="glass-card rounded-xl p-5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+          <div>
+            <h3 class="text-base font-semibold text-slate-900">“城市规划 × 房地产金融”复合就业能力矩阵</h3>
+            <p class="text-xs text-slate-500">将博士科研训练直接映射至投行（IBD）、公募 REITs 投研、不动产私募与资管（AM）岗位的核心胜任力（点击卡片可切换掌握状态）</p>
+          </div>
+          <div class="text-xs font-medium text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200">
+            面试展示亮点：兼具空间尽调深度与现金流定价建模能力
+          </div>
+        </div>
+
+        <div id="skills-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+      </div>
+    </div>
+
+    <!-- ==================== TAB 4: TOPIC FEASIBILITY FUNNEL ==================== -->
+    <div id="view-topics" class="hidden space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h3 class="text-base font-semibold text-slate-900">第一篇博士论文候选题目可行性漏斗</h3>
+          <p class="text-xs text-slate-500">综合评估“数据可得性”“空间规划创新度”与“业界痛点契合度”，帮你果断收敛选题</p>
+        </div>
+        <button onclick="toggleModal('modal-add-topic')" class="private-only px-3.5 py-1.5 bg-slate-900 text-white text-xs font-medium rounded-lg hover:bg-slate-800 transition">
+          + 添加候选题目
+        </button>
+      </div>
+
+      <div id="topics-list" class="space-y-4"></div>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t border-slate-200 py-5 mt-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-2">
+      <div>Academic & Industry Research Hub · Built for PhD Research & Career Portfolio</div>
+      <div>数据自动保存于当前浏览器本地存储 (LocalStorage) · 建议定期导出 JSON 备份</div>
+    </div>
+  </footer>
+
+  <!-- ==================== MODALS ==================== -->
+
+  <!-- Modal: Add Literature -->
+  <div id="modal-add-lit" class="fixed inset-0 bg-slate-900/50 hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-xl max-w-lg w-full p-6 shadow-xl">
+      <h3 class="text-base font-bold text-slate-900 mb-4">录入新文献与方法拆解</h3>
+      <form onsubmit="addLiterature(event)" class="space-y-3 text-sm">
+        <div>
+          <label class="block text-xs font-medium text-slate-700 mb-1">文献标题 / 作者</label>
+          <input type="text" id="lit-title" required placeholder="例如：Green Building Certification and REITs Pricing (2024)" class="w-full px-3 py-2 border border-slate-300 rounded-lg" />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-700 mb-1">发表年份</label>
+            <input type="number" id="lit-year" required value="2024" min="2000" max="2030" class="w-full px-3 py-2 border border-slate-300 rounded-lg" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-700 mb-1">研究视角</label>
+            <select id="lit-category" class="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white">
+              <option value="空间与建成环境">空间与建成环境</option>
+              <option value="ESG与绿色溢价">ESG与绿色溢价</option>
+              <option value="纯金融定价与流动性">纯金融定价与流动性</option>
+              <option value="扩募与治理结构">扩募与治理结构</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-700 mb-1">核心计量 / 空间方法</label>
+          <select id="lit-method" class="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white">
+            <option value="空间计量 (SDM/SAR/GWR)">空间计量 (SDM/SAR/GWR)</option>
+            <option value="双重差分 (DID)">双重差分 (DID)</option>
+            <option value="特征价格模型 (Hedonic)">特征价格模型 (Hedonic)</option>
+            <option value="事件研究法 (Event Study)">事件研究法 (Event Study)</option>
+            <option value="工具变量 / PSM">工具变量 / PSM</option>
+          </select>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-700 mb-1">被解释变量 (Y)</label>
+            <input type="text" id="lit-y" required placeholder="如：二级市场折溢价率 / Cap Rate" class="w-full px-3 py-2 border border-slate-300 rounded-lg" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-700 mb-1">核心解释变量 (X)</label>
+            <input type="text" id="lit-x" required placeholder="如：TOD站距 / 周边POI密度" class="w-full px-3 py-2 border border-slate-300 rounded-lg" />
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-700 mb-1">C-REITs 契合度 (1-5)</label>
+            <input type="number" id="lit-fit" min="1" max="5" value="4" class="w-full px-3 py-2 border border-slate-300 rounded-lg" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-700 mb-1">方法可复用度 (1-5)</label>
+            <input type="number" id="lit-reuse" min="1" max="5" value="5" class="w-full px-3 py-2 border border-slate-300 rounded-lg" />
+          </div>
+        </div>
+        <div class="flex justify-end space-x-2 pt-3">
+          <button type="button" onclick="toggleModal('modal-add-lit')" class="px-4 py-2 text-xs text-slate-600 hover:bg-slate-100 rounded-lg">取消</button>
+          <button type="submit" class="px-4 py-2 text-xs bg-slate-900 text-white rounded-lg hover:bg-slate-800">保存文献</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Add Industry Insight -->
+  <div id="modal-add-industry" class="fixed inset-0 bg-slate-900/50 hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-xl max-w-lg w-full p-6 shadow-xl">
+      <h3 class="text-base font-bold text-slate-900 mb-4">记录业界实务痛点 / 研报洞察</h3>
+      <form onsubmit="addIndustry(event)" class="space-y-3 text-sm">
+        <div>
+          <label class="block text-xs font-medium text-slate-700 mb-1">资产板块 / 痛点标题</label>
+          <input type="text" id="ind-title" required placeholder="例如：产业园 REITs 大租户退租与区域竞品冲击" class="w-full px-3 py-2 border border-slate-300 rounded-lg" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-700 mb-1">信息来源（交易所问询函 / 券商研报 / 季报）</label>
+          <input type="text" id="ind-source" required placeholder="例如：上交所2024扩募审核问询函 / 中金固收研报" class="w-full px-3 py-2 border border-slate-300 rounded-lg" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-700 mb-1">市场与运管机构的核心关切（Practitioner View）</label>
+          <textarea id="ind-pain" rows="2" required placeholder="从业者在意什么指标？如出租率下滑、租金收缴率、资本化率估值敏感性..." class="w-full px-3 py-2 border border-slate-300 rounded-lg"></textarea>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-700 mb-1">如何转化为你的博士研究问题（Academic Translation）</label>
+          <textarea id="ind-academic" rows="2" required placeholder="如何用规划空间数据与计量模型检验这一现象？" class="w-full px-3 py-2 border border-slate-300 rounded-lg"></textarea>
+        </div>
+        <div class="flex justify-end space-x-2 pt-3">
+          <button type="button" onclick="toggleModal('modal-add-industry')" class="px-4 py-2 text-xs text-slate-600 hover:bg-slate-100 rounded-lg">取消</button>
+          <button type="submit" class="px-4 py-2 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700">保存洞察</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Add Topic -->
+  <div id="modal-add-topic" class="fixed inset-0 bg-slate-900/50 hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-xl max-w-lg w-full p-6 shadow-xl">
+      <h3 class="text-base font-bold text-slate-900 mb-4">添加博士第一篇候选题目</h3>
+      <form onsubmit="addTopic(event)" class="space-y-3 text-sm">
+        <div>
+          <label class="block text-xs font-medium text-slate-700 mb-1">候选题目名称</label>
+          <input type="text" id="top-title" required placeholder="例如：地铁可达性与周边竞品密度对产业园REITs租金韧性的影响" class="w-full px-3 py-2 border border-slate-300 rounded-lg" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-700 mb-1">核心识别策略与数据说明</label>
+          <input type="text" id="top-desc" required placeholder="例如：使用季报面板数据 + 高德POI与路网 + 空间杜宾模型(SDM)" class="w-full px-3 py-2 border border-slate-300 rounded-lg" />
+        </div>
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-700 mb-1">数据可得性 (1-5)</label>
+            <input type="number" id="top-data" min="1" max="5" value="4" class="w-full px-3 py-2 border border-slate-300 rounded-lg" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-700 mb-1">空间创新度 (1-5)</label>
+            <input type="number" id="top-innov" min="1" max="5" value="5" class="w-full px-3 py-2 border border-slate-300 rounded-lg" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-700 mb-1">业界契合度 (1-5)</label>
+            <input type="number" id="top-ind" min="1" max="5" value="4" class="w-full px-3 py-2 border border-slate-300 rounded-lg" />
+          </div>
+        </div>
+        <div class="flex justify-end space-x-2 pt-3">
+          <button type="button" onclick="toggleModal('modal-add-topic')" class="px-4 py-2 text-xs text-slate-600 hover:bg-slate-100 rounded-lg">取消</button>
+          <button type="submit" class="px-4 py-2 text-xs bg-slate-900 text-white rounded-lg hover:bg-slate-800">添加题目</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- JavaScript Logic -->
+  <script>
+    const STORAGE_KEY = 'creits_phd_hub_v2';
+
+    const defaultState = {
+      mode: 'private',
+      profile: {
+        title: '微观建成环境、空间溢出与中国公募 REITs 定价韧性研究',
+        subtitle: '立足城市规划空间分析与房地产金融交叉视角，结合高颗粒度 GIS 建成环境指标、交易所招募说明书底层资产数据与二级市场交易表现，解析底层物业空间护城河如何传导至现金流稳定性（NOI）与估值溢价。'
+      },
+      literature: [
+        {
+          id: 1,
+          title: 'Spatial Spillovers and Asset Pricing in Commercial REITs (Real Estate Economics)',
+          year: 2023,
+          category: '空间与建成环境',
+          method: '空间计量 (SDM/SAR/GWR)',
+          y: '二级市场超额收益率 / 折溢价率',
+          x: '底层物业3km内产业集聚度与交通可达性',
+          fit: 5,
+          reuse: 5
+        },
+        {
+          id: 2,
+          title: 'Green Building Certification, Energy Efficiency and REIT Cash Flow Resilience',
+          year: 2024,
+          category: 'ESG与绿色溢价',
+          method: '双重差分 (DID)',
+          y: '净营运收入 (NOI) 波动率 / Cap Rate',
+          x: '绿建三星/LEED认证及能耗强度指标',
+          fit: 4,
+          reuse: 5
+        },
+        {
+          id: 3,
+          title: 'Infrastructure Expansion Announcements and Market Spillover in C-REITs',
+          year: 2024,
+          category: '扩募与治理结构',
+          method: '事件研究法 (Event Study)',
+          y: '累计超额收益 (CAR) 与换手率',
+          x: '首批扩募获批事件窗口与资产区位协同度',
+          fit: 5,
+          reuse: 4
+        },
+        {
+          id: 4,
+          title: 'Transit-Oriented Development (TOD) Premium in Retail & Industrial Properties',
+          year: 2022,
+          category: '空间与建成环境',
+          method: '特征价格模型 (Hedonic)',
+          y: '底层物业评估单价与单位租金',
+          x: '地铁站点步行时间与商圈POI多样性熵值',
+          fit: 4,
+          reuse: 4
+        }
+      ],
+      industry: [
+        {
+          id: 101,
+          title: '产业园 REITs“以价换量”与区域新增供应冲击',
+          source: '交易所2024年报问询函 & 券商地产/固收专题',
+          pain: '部分一线城市外围产业园出现大租户退租，运管机构被迫下调续租租金以维持出租率，二级市场对“单一大租户依赖度”与“周边新建园区竞争”极为敏感。',
+          academic: '利用高德/企查查空间点位测算底层资产 5km 范围内同质园区新增供给密度，构建空间竞争指数，检验微观区位护城河对出租率韧性的调节效应。'
+        },
+        {
+          id: 102,
+          title: '消费基础设施（购物中心）的商圈辐射与客流转化尽调',
+          source: '首批消费 REITs 招募说明书及估值机构评估报告',
+          pain: '投资人质疑评估报告中预测的长期租金增长率是否过高，核心痛点在于如何客观量化购物中心在周边竞品分流下的真实客流腹地与消费粘性。',
+          academic: '结合手机信令/夜间灯光/POI 商业业态混合度指标，对比招募说明书预测 NOI 与季报实际完成率的偏差，识别影响估值准确度的空间因子。'
+        },
+        {
+          id: 103,
+          title: '首批扩募（Expansion）资产包注入的区位协同 vs 摊薄效应',
+          source: '上交所/深交所首批扩募反馈意见回复函',
+          pain: '二级市场关注新购入资产与原有资产是形成“区域运营协同（降本增效）”，还是因为资产质量下沉导致整体分派率被摊薄。',
+          academic: '采用多期双重差分（Staggered DID）与事件研究法，对比扩募资产与原资产的地理距离、城市能级差异对扩募公告后市场反应（CAR）的影响。'
+        }
+      ],
+      skills: [
+        {
+          id: 'sk1',
+          domain: '空间尽调与区位量化 (Spatial DD)',
+          academicSkill: 'GIS 空间分析、POI 竞品密度测算、路网等时圈与 TOD 可达性建模',
+          industryRole: '不动产买方收购尽调（Acquisition DD）：科学评估购物中心/产业园辐射半径与抗竞争护城河',
+          completed: true
+        },
+        {
+          id: 'sk2',
+          domain: '底层资产现金流与估值拆解 (Valuation)',
+          academicSkill: '招募说明书财务面板整理、NOI/可供分配金额拆解、资本化率 (Cap Rate) 归因分析',
+          industryRole: 'REITs 投行（IBD）与公募投研：DCF 估值模型敏感性测试与扩募资产定价合理性评估',
+          completed: true
+        },
+        {
+          id: 'sk3',
+          domain: '因果推断与政策冲击评估 (Econometrics)',
+          academicSkill: '双重差分 (DID)、空间杜宾模型 (SDM)、工具变量 (IV) 与稳健性检验',
+          industryRole: '宏观与行业策略研究：量化评估扩募新规、降息周期或区域产业政策对板块的溢出效应',
+          completed: false
+        },
+        {
+          id: 'sk4',
+          domain: '另类数据与自动化数据工程 (Alt-Data)',
+          academicSkill: 'Python 自动化抓取交易所公告/季报、遥感绿视率/夜光数据与结构化面板清洗',
+          industryRole: '量化投研与资产管理（AM）：利用高频另类数据实时追踪底层物业运营健康度并预警退租风险',
+          completed: false
+        }
+      ],
+      topics: [
+        {
+          id: 201,
+          title: '周边竞品供给密度与交通可达性如何影响产业园 C-REITs 的现金流韧性？',
+          desc: '样本：已上市产业园 REITs 季度面板数据 + 底层园区经纬度 5km 竞品POI + 空间杜宾模型 (SDM)',
+          dataScore: 5,
+          innovScore: 5,
+          indScore: 5
+        },
+        {
+          id: 202,
+          title: '底层资产绿色建筑认证与能耗表现能否降低 C-REITs 的估值折价率？',
+          desc: '样本：全部上市 C-REITs 招募说明书 ESG 文本提取 + 季度二级市场折溢价率 + PSM-DID',
+          dataScore: 4,
+          innovScore: 4,
+          indScore: 4
+        },
+        {
+          id: 203,
+          title: '扩募资产的地理邻近性与城市能级匹配度对二级市场溢价的影响机制',
+          desc: '样本：首批及后续扩募 REITs 事件窗口数据 + 资产间地理距离矩阵 + 事件研究法 (Event Study)',
+          dataScore: 3,
+          innovScore: 4,
+          indScore: 5
+        }
+      ]
+    };
+
+    let state = JSON.parse(localStorage.getItem(STORAGE_KEY)) || defaultState;
+    let trendChartInstance = null;
+    let relevanceChartInstance = null;
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      updateStats();
+    }
+
+    function saveProfile() {
+      state.profile.title = document.getElementById('hero-title').innerText.trim();
+      state.profile.subtitle = document.getElementById('hero-subtitle').innerText.trim();
+      saveState();
+    }
+
+    function setMode(mode) {
+      state.mode = mode;
+      const isPublic = mode === 'public';
+      
+      document.getElementById('btn-mode-private').className = isPublic
+        ? 'px-2.5 py-1.5 rounded-md text-slate-600 hover:text-slate-900 transition'
+        : 'px-2.5 py-1.5 rounded-md bg-white text-slate-900 shadow-sm transition';
+      
+      document.getElementById('btn-mode-public').className = isPublic
+        ? 'px-2.5 py-1.5 rounded-md bg-slate-900 text-white shadow-sm transition'
+        : 'px-2.5 py-1.5 rounded-md text-slate-600 hover:text-slate-900 transition';
+
+      document.getElementById('data-controls').style.display = isPublic ? 'none' : 'flex';
+      document.getElementById('edit-hint').style.display = isPublic ? 'none' : 'inline';
+      
+      const titleEl = document.getElementById('hero-title');
+      const subEl = document.getElementById('hero-subtitle');
+      titleEl.contentEditable = !isPublic;
+      subEl.contentEditable = !isPublic;
+      if (isPublic) {
+        titleEl.classList.remove('editable-highlight');
+        subEl.classList.remove('editable-highlight');
+      } else {
+        titleEl.classList.add('editable-highlight');
+        subEl.classList.add('editable-highlight');
+      }
+
+      document.querySelectorAll('.private-only').forEach(el => {
+        el.style.display = isPublic ? 'none' : '';
+      });
+
+      saveState();
+    }
+
+    function switchTab(tabName) {
+      ['literature', 'industry', 'skills', 'topics'].forEach(t => {
+        document.getElementById(`view-${t}`).classList.add('hidden'); document.getElementById(`tab-${t}`).classList.remove('tab-active');
+        document.getElementById(`tab-${t}`).classList.add('text-slate-500'); }); document.getElementById(`view-${tabName}`).classList.remove('hidden');
+      const activeBtn = document.getElementById(`tab-${tabName}`); activeBtn.classList.add('tab-active'); activeBtn.classList.remove('text-slate-500'); }  function toggleModal(modalId) { const el = document.getElementById(modalId); if (el.classList.contains('hidden')) { el.classList.remove('hidden'); el.classList.add('flex'); } else { el.classList.add('hidden'); el.classList.remove('flex'); } }  function updateStats() { document.getElementById('stat-lit-count').innerText = state.literature.length; document.getElementById('stat-industry-count').innerText = state.industry.length; const doneSkills = state.skills.filter(s => s.completed).length; const pct = state.skills.length ? Math.round((doneSkills / state.skills.length) * 100) : 0; document.getElementById('stat-skill-progress').innerText = `${pct}%`;
+    }
+
+    // --- Render Literature & Charts ---
+    function renderLiterature() {
+      const filter = document.getElementById('filter-method').value;
+      const tbody = document.getElementById('lit-table-body');
+      tbody.innerHTML = '';
+
+      const filtered = filter === 'ALL' 
+        ? state.literature 
+        : state.literature.filter(item => item.method === filter);
+
+      filtered.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50/80 transition';
+        tr.innerHTML = `
+          <td class="py-3 px-3 font-medium text-slate-900">
+            <div>${item.title}</div>
+            <div class="text-xs text-slate-400 font-normal mt-0.5">${item.year}</div>
+          </td>
+          <td class="py-3 px-3 text-xs">
+            <span class="px-2 py-1 rounded bg-slate-100 text-slate-700">${item.category}</span>
+          </td>
+          <td class="py-3 px-3 text-xs font-medium text-blue-700">${item.method}</td>
+          <td class="py-3 px-3 text-xs text-slate-600">${item.y}</td>
+          <td class="py-3 px-3 text-xs text-slate-600">${item.x}</td>
+          <td class="py-3 px-3 text-xs text-slate-700">
+            契合 <span class="font-semibold">${item.fit}</span>/5 · 复用 <span class="font-semibold">${item.reuse}</span>/5
+          </td>
+          <td class="py-3 px-3 text-right private-only" style="display: ${state.mode === 'public' ? 'none' : ''}">
+            <button onclick="deleteLit(${item.id})" class="text-xs text-rose-600 hover:underline">删除</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // Update Variable Building Blocks
+      const poolY = document.getElementById('pool-y');
+      const poolX = document.getElementById('pool-x');
+      poolY.innerHTML = '';
+      poolX.innerHTML = '';
+
+      const uniqueY = [...new Set(state.literature.map(l => l.y))];
+      const uniqueX = [...new Set(state.literature.map(l => l.x))];
+
+      uniqueY.forEach(y => {
+        poolY.innerHTML += `<span class="text-xs px-2.5 py-1 rounded-md bg-white border border-slate-200 text-slate-700 shadow-2xs">${y}</span>`;
+      });
+      uniqueX.forEach(x => {
+        poolX.innerHTML += `<span class="text-xs px-2.5 py-1 rounded-md bg-white border border-blue-200 text-blue-800 shadow-2xs">${x}</span>`; });  renderCharts(); }  function addLiterature(e) { e.preventDefault(); const newLit = { id: Date.now(), title: document.getElementById('lit-title').value.trim(), year: parseInt(document.getElementById('lit-year').value), category: document.getElementById('lit-category').value, method: document.getElementById('lit-method').value, y: document.getElementById('lit-y').value.trim(), x: document.getElementById('lit-x').value.trim(), fit: parseInt(document.getElementById('lit-fit').value), reuse: parseInt(document.getElementById('lit-reuse').value) }; state.literature.unshift(newLit); saveState(); renderLiterature(); toggleModal('modal-add-lit'); e.target.reset(); }  function deleteLit(id) { state.literature = state.literature.filter(l => l.id !== id); saveState(); renderLiterature(); }  function renderCharts() { // 1. Trend Chart const years = [...new Set(state.literature.map(l => l.year))].sort(); const spatialCounts = years.map(yr => state.literature.filter(l => l.year === yr && (l.category === '空间与建成环境' \vert{}\vert{} l.category === 'ESG与绿色溢价')).length); const financeCounts = years.map(yr => state.literature.filter(l => l.year === yr && (l.category === '纯金融定价与流动性' \vert{}\vert{} l.category === '扩募与治理结构')).length);  const ctxTrend = document.getElementById('trendChart').getContext('2d'); if (trendChartInstance) trendChartInstance.destroy(); trendChartInstance = new Chart(ctxTrend, { type: 'bar', data: { labels: years, datasets: [ { label: '空间/ESG跨学科视角', data: spatialCounts, backgroundColor: '#2563eb', borderRadius: 4 }, { label: '金融定价/治理视角', data: financeCounts, backgroundColor: '#94a3b8', borderRadius: 4 } ] }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true, ticks: { stepSize: 1 } } }, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } } } });  // 2. Relevance Scatter Chart const scatterPoints = state.literature.map(l => ({ x: l.fit + (Math.random() - 0.5) * 0.15, y: l.reuse + (Math.random() - 0.5) * 0.15, label: l.title.slice(0, 28) + '...' }));  const ctxRel = document.getElementById('relevanceChart').getContext('2d'); if (relevanceChartInstance) relevanceChartInstance.destroy(); relevanceChartInstance = new Chart(ctxRel, { type: 'scatter', data: { datasets: [{ label: '核心文献定位 (右上角为最佳模版)', data: scatterPoints, backgroundColor: '#0f172a', pointRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { min: 1, max: 5.5, title: { display: true, text: 'C-REITs 场景契合度', font: { size: 11 } } }, y: { min: 1, max: 5.5, title: { display: true, text: '方法可复用度', font: { size: 11 } } } }, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } }, tooltip: { callbacks: { label: (ctx) => ctx.raw.label } } } } }); }  // --- OpenAlex Live Search & CNKI/Scholar Jump --- async function searchOpenAlex() { const q = document.getElementById('search-query').value.trim(); if (!q) return; const box = document.getElementById('openalex-results'); box.classList.remove('hidden'); box.innerHTML = '<div class="text-xs text-slate-500">正在检索 OpenAlex 全球学术库...</div>';  try { const res = await fetch(`https://api.openalex.org/works?search=${encodeURIComponent(q)}&per-page=5&sort=relevance_score:desc`);
+        const data = await res.json();
+        if (!data.results || data.results.length === 0) {
+          box.innerHTML = '<div class="text-xs text-slate-500">未找到匹配结果，请尝试更换英文关键词。</div>';
+          return;
+        }
+        box.innerHTML = '<div class="text-xs font-semibold text-slate-700 mb-2">OpenAlex 实时检索结果（点击可一键导入矩阵）：</div>';
+        data.results.forEach(work => {
+          const title = work.title || 'Untitled';
+          const year = work.publication_year || 2024;
+          const journal = work.primary_location?.source?.display_name || 'Academic Journal';
+          const div = document.createElement('div');
+          div.className = 'flex items-center justify-between gap-3 p-2.5 rounded-lg bg-slate-50 border border-slate-200/80 text-xs';
+          div.innerHTML = `
+            <div>
+              <div class="font-medium text-slate-900">${title}</div>
+              <div class="text-slate-500 mt-0.5">${journal} · ${year} · 引用量: ${work.cited_by_count}</div>
+            </div>
+            <button onclick="quickImportOpenAlex('${title.replace(/'/g, "\\'")}', ${year})" class="shrink-0 px-2.5 py-1.5 bg-white border border-slate-300 rounded hover:bg-slate-900 hover:text-white transition">
+              + 导入库
+            </button>
+          `;
+          box.appendChild(div);
+        });
+      } catch (err) {
+        box.innerHTML = '<div class="text-xs text-rose-600">网络请求受限，请检查网络连接后重试。</div>';
+      }
+    }
+
+    function quickImportOpenAlex(title, year) {
+      state.literature.unshift({
+        id: Date.now(),
+        title: title,
+        year: year,
+        category: '空间与建成环境',
+        method: '特征价格模型 (Hedonic)',
+        y: '待补充 (Y)',
+        x: '待补充 (X)',
+        fit: 4,
+        reuse: 4
+      });
+      saveState();
+      renderLiterature();
+      alert('已快速导入至文献矩阵，可在下方表格中补充具体变量！');
+    }
+
+    function jumpCNKI() {
+      const q = document.getElementById('search-query').value.trim() || '公募REITs 空间';
+      window.open(`https://kns.cnki.net/kns8s/defaultresult/index?kw=${encodeURIComponent(q)}`, '_blank'); }  function jumpScholar() { const q = document.getElementById('search-query').value.trim() \vert{}\vert{} 'C-REITs spatial'; window.open(`https://scholar.google.com/scholar?q=${encodeURIComponent(q)}`, '_blank');
+    }
+
+    // --- Render Industry Insights ---
+    function renderIndustry() {
+      const container = document.getElementById('industry-cards-container');
+      container.innerHTML = '';
+      state.industry.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'glass-card rounded-xl p-5 flex flex-col justify-between';
+        card.innerHTML = `
+          <div>
+            <div class="flex items-start justify-between gap-2">
+              <span class="text-xs font-medium px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-100">${item.source}</span>
+              <button onclick="deleteIndustry(${item.id})" class="private-only text-xs text-slate-400 hover:text-rose-600" style="display: ${state.mode === 'public' ? 'none' : ''}">删除</button>
+            </div>
+            <h4 class="text-base font-bold text-slate-900 mt-2.5">${item.title}</h4>
+            <div class="mt-3 space-y-2.5 text-xs leading-relaxed">
+              <div class="p-3 rounded-lg bg-amber-50/70 border border-amber-200/70 text-slate-700">
+                <span class="font-semibold text-amber-900 block mb-0.5">一线实务痛点 (Practitioner Concern)：</span>
+                ${item.pain}
+              </div>
+              <div class="p-3 rounded-lg bg-slate-50 border border-slate-200/80 text-slate-700">
+                <span class="font-semibold text-slate-900 block mb-0.5">博士学术转化 (Research Translation)：</span>
+                ${item.academic}
+              </div>
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function addIndustry(e) {
+      e.preventDefault();
+      state.industry.unshift({
+        id: Date.now(),
+        title: document.getElementById('ind-title').value.trim(),
+        source: document.getElementById('ind-source').value.trim(),
+        pain: document.getElementById('ind-pain').value.trim(),
+        academic: document.getElementById('ind-academic').value.trim()
+      });
+      saveState();
+      renderIndustry();
+      toggleModal('modal-add-industry');
+      e.target.reset();
+    }
+
+    function deleteIndustry(id) {
+      state.industry = state.industry.filter(i => i.id !== id);
+      saveState();
+      renderIndustry();
+    }
+
+    // --- Render Career Skills ---
+    function renderSkills() {
+      const grid = document.getElementById('skills-grid');
+      grid.innerHTML = '';
+      state.skills.forEach(sk => {
+        const div = document.createElement('div');
+        div.onclick = () => {
+          if (state.mode === 'public') return;
+          sk.completed = !sk.completed;
+          saveState();
+          renderSkills();
+        };
+        div.className = `p-4 rounded-xl border transition cursor-pointer ${
+          sk.completed ? 'bg-emerald-50/40 border-emerald-200' : 'bg-white border-slate-200 hover:border-slate-300'
+        }`;
+        div.innerHTML = `
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-sm font-bold text-slate-900">${sk.domain}</span>
+            <span class="text-xs px-2.5 py-0.5 rounded-full font-medium ${
+              sk.completed ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'
+            }">
+              ${sk.completed ? '✓ 已在研究中掌握' : '待点亮 / 进阶中'}
+            </span>
+          </div>
+          <div class="text-xs text-slate-600 space-y-1.5 mt-2">
+            <div><span class="font-semibold text-slate-800">学术科研训练：</span>${sk.academicSkill}</div>
+            <div><span class="font-semibold text-blue-800">业界岗位映射：</span>${sk.industryRole}</div>
+          </div>
+        `;
+        grid.appendChild(div);
+      });
+    }
+
+    // --- Render Topics Funnel ---
+    function renderTopics() {
+      const list = document.getElementById('topics-list');
+      list.innerHTML = '';
+      const sorted = [...state.topics].sort((a, b) => (b.dataScore + b.innovScore + b.indScore) - (a.dataScore + a.innovScore + a.indScore));
+
+      sorted.forEach((t, idx) => {
+        const total = t.dataScore + t.innovScore + t.indScore;
+        const div = document.createElement('div');
+        div.className = 'glass-card rounded-xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4';
+        div.innerHTML = `
+          <div class="space-y-1">
+            <div class="flex items-center space-x-2">
+              <span class="text-xs font-bold px-2 py-0.5 rounded bg-slate-900 text-white">候选 #${idx + 1} · 总分 ${total}/15</span>
+              <h4 class="text-base font-bold text-slate-900">${t.title}</h4>
+            </div>
+            <p class="text-xs text-slate-600">${t.desc}</p>
+          </div>
+          <div class="flex items-center space-x-3 shrink-0 text-xs">
+            <div class="px-2.5 py-1.5 rounded bg-slate-50 border border-slate-200 text-center">
+              <div class="text-slate-400">数据可得</div>
+              <div class="font-bold text-slate-900">${t.dataScore}/5</div>
+            </div>
+            <div class="px-2.5 py-1.5 rounded bg-slate-50 border border-slate-200 text-center">
+              <div class="text-slate-400">空间创新</div>
+              <div class="font-bold text-blue-600">${t.innovScore}/5</div>
+            </div>
+            <div class="px-2.5 py-1.5 rounded bg-slate-50 border
